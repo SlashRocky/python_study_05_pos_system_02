@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <title>Eel Examples</title>
+        <script type="text/javascript" src="eel.js"></script>
+        <link rel="stylesheet" href="style.css">
+        <link href="https://use.fontawesome.com/releases/v5.0.8/css/all.css" rel="stylesheet">
+        <script type="text/javascript">
+            async function checkInventoryBtnClick() {
+                let tableElem = document.getElementById('inventory_table')
+
+                // もし既に表示されている場合、在庫データを一回クリア
+                while(tableElem.firstChild) {
+                    tableElem.removeChild(tableElem.firstChild)
+                }
+
+                // 在庫確認テキスト表示
+                document.getElementById('check-inventory-text').style.display = "block";
+
+                // 在庫データ表示
+                let inventory_details = await eel.display_inventory()()
+
+                for(let i = 0; i < inventory_details.length; i++) {
+                    let tr = document.createElement('tr');
+
+                    if (i === 0) {
+                        for(let j = 0; j < 5; j++) {
+                            let th = document.createElement('th');
+                            th.innerHTML = inventory_details[0][j]
+                            tr.appendChild(th)
+                        }
+                    } else {
+                        for(let k = 0; k < 5; k++) {
+                            let td = document.createElement('td');
+                            if(k === 0) {
+                                td.id = 'inventory_code_of_' + i
+                            }
+                            if(k === 3) {
+                                td.id = 'inventory_count_of_' + i
+                            }
+                            td.innerHTML = inventory_details[i][k]
+                            tr.appendChild(td)
+                        }
+                    }
+                    tableElem.appendChild(tr);
+                }
+                tableElem.style.display = "block";
+
+                // 商品登録テキストボタン表示
+                document.getElementById('register-inventory-text').style.display = "block";
+                document.getElementById('yesRegisterProductsBtn').style.display = "inline-block";
+                document.getElementById('noRegisterProductsBtn').style.display = "inline-block";
+            }
+
+            function yesRegisterProductsBtnClick() {
+                document.getElementById('register_table').style.display = "block";
+                document.getElementById('registerProductsBtn').style.display = "block";
+                document.getElementById('purchase-products-text').style.display = "none";
+                document.getElementById('yesPurchaseProductsBtn').style.display = "none";
+                document.getElementById('noPurchaseProductsBtn').style.display = "none";
+                document.getElementById('quantity-text').style.display = "none";
+                document.getElementById('purchase_table').style.display = "none";
+                document.getElementById('sum_total').style.display = "none";
+                document.getElementById('settlement_btn').style.display = "none";
+            }
+
+            function noRegisterProductsBtnClick() {
+                document.getElementById('register_table').style.display = "none"
+                document.getElementById('registerProductsBtn').style.display = "none";
+                document.getElementById('purchase-products-text').style.display = "block";
+                document.getElementById('yesPurchaseProductsBtn').style.display = "inline-block";
+                document.getElementById('noPurchaseProductsBtn').style.display = "inline-block";
+            }
+
+            function getProductTotal() {
+                let inputted_product_price = document.getElementById("product_price").value;
+                let inputted_product_quantity = document.getElementById("product_quantity").value;
+                let total = inputted_product_price * inputted_product_quantity;
+                document.getElementById("total").innerText = total
+            }
+
+            async function registerProductsBtnClick() {
+                let inputted_product_code = document.getElementById("product_code").value;
+                // 同じCODEは登録不可にする
+                let tr_elem_num = document.getElementById('inventory_table').childElementCount
+                for (let i = 1; i < tr_elem_num; i++) {
+                    let product_code_of_already_exist = document.getElementById('inventory_code_of_' + i).textContent
+                    if (inputted_product_code === product_code_of_already_exist) {
+                        window.alert('そのCODEは既に存在しています。別のCODEにして下さい。')
+                        return;
+                    }
+                }
+                if(inputted_product_code === '') {
+                    window.alert('CODEの入力は必須です。')
+                        return;
+                }
+
+                let inputted_product_name = document.getElementById("product_name").value;
+                if(inputted_product_name === '') {
+                    window.alert('NAMEの入力は必須です。')
+                        return;
+                }
+
+                let inputted_product_price = document.getElementById("product_price").value;
+                if(inputted_product_price === '') {
+                    window.alert('PRICEの入力は必須です。')
+                        return;
+                } else {
+                    if(isNaN(inputted_product_price)) {
+                        window.alert('「PRICE」の箇所に入力できるのは数字のみになります。')
+                        return;
+                    }
+                }
+
+                let inputted_product_quantity = document.getElementById("product_quantity").value;
+                if(inputted_product_quantity === '') {
+                    window.alert('QUANTITYの入力は必須です。')
+                        return;
+                } else {
+                    if(isNaN(inputted_product_quantity)) {
+                        window.alert('「QUANTITY」の箇所に入力できるのは数字のみになります。')
+                        return;
+                    }
+                }
+
+                let inputted_product_total = document.getElementById("total").textContent;
+                let registered_text = await eel.register_inventory(inputted_product_code, inputted_product_name, inputted_product_price, inputted_product_quantity, inputted_product_total)();
+                document.getElementById("registered-inventory-text").innerText = registered_text;
+                document.getElementById("product_code").value = '';
+                document.getElementById("product_name").value = '';
+                document.getElementById("product_price").value = '';
+                document.getElementById("product_quantity").value = '';
+                document.getElementById("total").textContent = '';
+                document.getElementById("register_table").style.display = 'none';
+                document.getElementById("registerProductsBtn").style.display = 'none';
+            }
+
+            function totalCalc() {
+                let trElemCount = document.getElementById("purchase_table").childElementCount
+                let sum_total = 0
+                for(let i = 1; i < trElemCount; i++) {
+                    let product_price = Number(document.getElementById('price_of_' + i).textContent)
+                    let product_quantity = Number(document.getElementById('quantity_of_' + i).value)
+                    let product_total = product_price * product_quantity
+                    document.getElementById('total_of_' + i).textContent = product_total.toLocaleString()
+                    sum_total += product_total
+                }
+                document.getElementById('sum_total_output').textContent = sum_total.toLocaleString()
+            }
+
+            async function yesPurchaseProductsBtnClick() {
+                if(document.getElementById('purchase_table').style.display === 'none') {
+                    document.getElementById('quantity-text').style.display = 'block';
+                    document.getElementById('sum_total').style.display = 'inline-block';
+                    document.getElementById('settlement_btn').style.display = 'inline-block';
+                    document.getElementById("see-you-text-without-purchase").style.display = 'none';
+
+                    let purchaseTableElem = document.getElementById("purchase_table")
+                    let inventory_details = await eel.display_inventory()()
+
+                    for(let i = 0; i < inventory_details.length; i++) {
+                        let tr = document.createElement('tr');
+
+                        if (i === 0) {
+                            for(let j = 0; j < 5; j++) {
+                                let th = document.createElement('th');
+                                th.innerHTML = inventory_details[0][j]
+                                tr.appendChild(th)
+                            }
+                        } else {
+                            for(let k = 0; k < 5; k++) {
+                                let td = document.createElement('td');
+                                if( k === 0) {
+                                    td.id = 'code_of_' + i
+                                }
+                                if( k === 1) {
+                                    td.id = 'name_of_' + i
+                                }
+                                if(k === 2) {
+                                    td.id = 'price_of_' + i
+                                    td.innerHTML = Number(inventory_details[i][k])
+                                }
+                                else if (k === 3) {
+                                     td.innerHTML = '<input onChange="totalCalc()" id="quantity_of_' + i + '" type="text" value="">'
+                                } else if (k === 4) {
+                                    td.id = 'total_of_' + i
+                                }
+                                else {
+                                    td.innerHTML = inventory_details[i][k]
+                                }
+                                tr.appendChild(td);
+                            }
+                        }
+                        purchaseTableElem.appendChild(tr);
+                    }
+                    purchaseTableElem.style.display = "block";
+                }
+            }
+
+            function settlementClickBtn() {
+                let tr_elem_num = document.getElementById('purchase_table').childElementCount
+                for (let i = 1; i < tr_elem_num; i++) {
+                    let quantity_of_purchased_item = document.getElementById('quantity_of_' + i).value
+
+                    // 数字かどうかを判定
+                    if(quantity_of_purchased_item) {
+                        if(isNaN(quantity_of_purchased_item)) {
+                            window.alert('入力できるのは数字のみになります。')
+                            return;
+                        }
+                    } else {
+
+                        document.getElementById('quantity_of_' + i).value = 0
+                    }
+                    quantity_of_purchased_item = parseInt(quantity_of_purchased_item)
+                    // 在庫数以上の注文はできないようにする
+                    if(quantity_of_purchased_item > document.getElementById('inventory_count_of_' + i).textContent) {
+                        window.alert('注文数が在庫数を超えています。上表にて在庫数を確認して下さい。')
+                        return
+                    }
+                }
+                document.getElementById('payment-screen').classList.toggle('is-show');
+                document.getElementById('payment_sum_total_output').textContent = document.getElementById('sum_total_output').textContent
+            }
+
+            function closeModalBtn() {
+                document.getElementById('payment-screen').classList.toggle('is-show');
+            }
+
+            function clickBackGround() {
+                document.getElementById('payment-screen').classList.toggle('is-show');
+            }
+
+            async function paymentBtnClick() {
+                let payment_amount = document.getElementById('payment').value;
+                if(payment_amount) {
+                    if (isNaN(payment_amount)) {
+                        window.alert('入力できるのは数字のみになります。');
+                        return;
+                    }
+                }
+                payment_amount = Number(payment_amount);
+                let sum_total_output = Number(document.getElementById('sum_total_output').textContent.replace(/,/g, ""));
+                let change = payment_amount - sum_total_output;
+                if(change < 0) {
+                    document.getElementById('balance').textContent = 'お支払い金額が足りません。'
+                    return
+                } else {
+                    document.getElementById('balance').textContent = 'お釣りは¥' + change.toLocaleString() + 'になります。';
+                    document.getElementById("see-you-text-with-purchase").style.display = 'block';
+                }
+
+                // 購入された商品情報をPython側に渡す
+                let tr_elem_num = document.getElementById('purchase_table').childElementCount
+                let list_of_purchased_items = []
+                for (let i = 1; i < tr_elem_num; i++) {
+                    let list_of_purchased_item = []
+                    let code_of_purchased_item = document.getElementById('code_of_' + i).textContent
+                    let name_of_purchased_item = document.getElementById('name_of_' + i).textContent
+                    let price_of_purchased_item = document.getElementById('price_of_' + i).textContent
+                    let quantity_of_purchased_item = parseInt(document.getElementById('quantity_of_' + i).value)
+                    list_of_purchased_item.push(code_of_purchased_item, name_of_purchased_item, price_of_purchased_item, quantity_of_purchased_item)
+                    list_of_purchased_items.push(list_of_purchased_item)
+                }
+                eel.update_inventory(list_of_purchased_items)();
+                let file_name = await eel.output_receipt(payment_amount, sum_total_output, change, list_of_purchased_items)();
+                document.getElementById('file_location').style.display = 'block'
+                document.getElementById('file_location').textContent = '領収書は' + file_name + 'です。'
+
+                document.getElementById('check-inventory-text').style.display = 'none';
+                document.getElementById('inventory_table').style.display = 'none';
+                document.getElementById('register-inventory-text').style.display = 'none';
+                document.getElementById('yesRegisterProductsBtn').style.display = 'none';
+                document.getElementById('noRegisterProductsBtn').style.display = 'none';
+                document.getElementById('purchase-products-text').style.display = 'none';
+                document.getElementById('yesPurchaseProductsBtn').style.display = 'none';
+                document.getElementById('noPurchaseProductsBtn').style.display = 'none';
+                document.getElementById('quantity-text').style.display = 'none';
+                let parent = document.getElementById('purchase_table');
+                while(parent.lastChild){
+                    parent.removeChild(parent.lastChild);
+                }
+                parent.style.display = 'none';
+                document.getElementById('sum_total').style.display = 'none';
+                document.getElementById('settlement_btn').style.display = 'none';
+
+            }
+
+            function noPurchaseProductsBtnClick() {
+                document.getElementById("see-you-text-without-purchase").style.display = 'block';
+            }
+        </script>
+    </head>
+    <body>
+        <button onclick="checkInventoryBtnClick()">現在の在庫を確認する</button> <br><br>
+        <p id="check-inventory-text" style="display: none">現在登録されている商品は以下の通りです。</p>
+        <table id="inventory_table" style="display: none"></table>
+
+        <p id="register-inventory-text" style="display: none">商品を登録しますか？</p>
+        <button id="yesRegisterProductsBtn" onclick="yesRegisterProductsBtnClick()" style="display: none">Yes</button>
+        <button id="noRegisterProductsBtn" onclick="noRegisterProductsBtnClick()" style="display: none">No</button>
+
+        <table id="register_table" style="display: none; margin-top: 20px; margin-bottom: 20px;">
+            <tr>
+                <th>CODE</th>
+                <th>NAME</th>
+                <th>PRICE</th>
+                <th>QUANTITY</th>
+                <th>TOTAL</th>
+            </tr>
+            <tr>
+                <td>
+                    <input type="text" id="product_code" name="product_code" value="">
+                </td>
+                <td>
+                    <input type="text" id="product_name" name="product_name" value="">
+                </td>
+                <td>
+                    <input type="text" id="product_price" name="product_price" onChange="getProductTotal()" value="">
+                </td>
+                <td>
+                    <input type="text" id="product_quantity" name="product_quantity" onChange="getProductTotal()" value="">
+                </td>
+                <td>
+                    <span id="total"></span>
+                </td>
+            </tr>
+        </table>
+        <button id="registerProductsBtn" onclick="registerProductsBtnClick()" style="display: none">登録する</button>
+         <p id="registered-inventory-text"></p>
+
+
+        <p id="purchase-products-text" style="display: none">商品を購入しますか？</p>
+        <button id="yesPurchaseProductsBtn" onclick="yesPurchaseProductsBtnClick()" style="display: none">Yes</button>
+        <button id="noPurchaseProductsBtn" onclick="noPurchaseProductsBtnClick()" style="display: none">No</button>
+        <p id="quantity-text" style="display: none">購入したい数量を入力してね！</p>
+        <table id="purchase_table" style="display: none; margin-top: 20px; margin-bottom: 20px;"></table>
+        <div style="text-align: right">
+            <div id="sum_total" style="display: none;">
+                <dt style="display: inline-block">合計：¥</dt><dd id="sum_total_output" style="display: inline-block">0</dd>
+            </div>
+        </div>
+        <div  style="text-align: center">
+            <button id="settlement_btn" style="display: none;" onclick="settlementClickBtn()">購入する</button>
+        </div>
+
+        <div id="payment-screen" class="popup" style="text-align: center">
+            <div class="popup-inner">
+                <div class="close-btn" id="js-close-btn" onclick="closeModalBtn()"><i class="fas fa-times"></i></div>
+                <p>お支払い金額を入力したら、「決済する」をクリックして下さい。</p>
+                <dt style="display: inline-block">合計：¥</dt><dd id="payment_sum_total_output" style="display: inline-block">0</dd>
+                <form action="#" onsubmit="return false;">
+                    <label for="payment">お支払い金額：</label>
+                    <input type="text" id="payment" name="payment"><br><br>
+                    <button id="payment_btn" onclick="paymentBtnClick()">決済する</button>
+                </form>
+                <p id="balance"></p>
+                <p id="file_location" style="display: none;"></p>
+                <p id="see-you-text-with-purchase" style="display: none">またのご来店をお待ちしております。有難うございました！</p>
+            </div>
+            <div class="black-background" id="js-black-bg"onclick="clickBackGround()" ></div>
+        </div>
+
+        <p id="see-you-text-without-purchase" style="display: none">またのご来店をお待ちしております。有難うございました！</p>
+    </body>
+</html>

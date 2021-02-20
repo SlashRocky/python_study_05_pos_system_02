@@ -10,12 +10,12 @@ table th {
     color: #FF9800;/*文字色*/
     background: #fff5e5;/*背景色*/
     border: 1px solid orange;
-    width: 184.8px;
+    width: 204px;
 }
 
 table td {
     border: 1px solid orange;
-    width: 184.8px;
+    width: 204px;
 }
 
 table td input {
